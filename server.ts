@@ -1,4 +1,4 @@
-// server.ts
+// server.js
 import express from 'express';
 import cors from 'cors';
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai';
@@ -34,7 +34,7 @@ const MOODS = [
 app.post('/api/generate-aura', async (req, res) => {
   const { moodId, answers } = req.body;
 
-  const moodData = MOODS.find((m: any) => m.id === moodId);
+  const moodData = MOODS.find((m) => m.id === moodId);
 
   const prompt = `You are a phone aesthetic designer. Based on:
 Mood: ${moodData?.label} (${moodData?.desc})
