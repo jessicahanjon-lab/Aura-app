@@ -1,10 +1,10 @@
-// server.js
-import express from 'express';
-import cors from 'cors';
-import { createUIMessageStream, createUIMessageStreamResponse } from 'ai';
-import { anthropic } from '@ai-sdk/anthropic';
-import { streamObject } from 'ai';
-import { AuraResultSchema } from './src/lib/aura-schema.js';
+// server.js - CommonJS (helpoin Railwaylle)
+const express = require('express');
+const cors = require('cors');
+const { createUIMessageStream, createUIMessageStreamResponse } = require('ai');
+const { anthropic } = require('@ai-sdk/anthropic');
+const { streamObject } = require('ai');
+const { z } = require('zod');
 
 const app = express();
 app.use(cors());
@@ -30,22 +30,24 @@ const MOODS = [
   { id: "cyber", label: "Cyber", emoji: "⬡", desc: "Glitch, neon, matrix", accent: "#06b6d4", sub: "#22d3ee" },
 ];
 
+const AuraResultSchema = z.object({
+  wallpaperDescription: z.string().min(10),
+  colorStory: z.string(),
+  moodTagline: z.string().max(60),
+  topTip: z.string(),
+  fontPairing: z.string(),
+  lockscreenIdea: z.string(),
+});
+
 app.post('/api/generate-aura', async (req, res) => {
   const { moodId, answers } = req.body;
-
   const moodData = MOODS.find(m => m.id === moodId);
 
   const prompt = `You are a phone aesthetic designer. Based on:
 Mood: ${moodData?.label} (${moodData?.desc})
 Personality quiz answers: ${JSON.stringify(answers)}
 
-Generate a JSON object (ONLY JSON, no markdown, no backticks) with these keys:
-- wallpaperDescription: string (2 sentences describing the ideal wallpaper)
-- colorStory: string (1 sentence about the color philosophy)
-- moodTagline: string (a short punchy tagline for this setup, max 8 words)
-- topTip: string (one specific actionable setup tip)
-- fontPairing: string (e.g., "SF Pro Display + Helvetica Neue")
-- lockscreenIdea: string (describe the lockscreen concept in 1-2 sentences)`;
+Generate JSON with: wallpaperDescription, colorStory, moodTagline, topTip, fontPairing, lockscreenIdea.`;
 
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
@@ -58,17 +60,16 @@ Generate a JSON object (ONLY JSON, no markdown, no backticks) with these keys:
             totalSteps: STEPS.length,
             message: STEPS[i],
             progress: Math.round(((i + 1) / STEPS.length) * 100),
-            emoji: '✦',
           },
         });
-        await new Promise(r => setTimeout(r, 380));
+        await new Promise(r => setTimeout(r, 350));
       }
 
       const result = streamObject({
         model: anthropic('claude-sonnet-4.5'),
         schema: AuraResultSchema,
         prompt,
-        temperature: 0.75,
+        temperature: 0.7,
       });
 
       writer.merge(result.toUIMessageStream());
